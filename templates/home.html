@@ -1,0 +1,110 @@
+{% extends 'layout.html' %}
+
+{% block title %} home {% endblock %}
+
+{% block body %}
+
+<!-- Image header -->
+<div class="w3-display-container w3-container">
+  <img src="{{url_for('static', filename='images/image_header.jpg')}}" alt="Jeans" style="width:100%">
+  <div class="w3-display-topleft w3-text-white" style="padding:24px 48px">
+    <h1 class="w3-jumbo w3-hide-small">New arrivals</h1>
+    <h1 class="w3-hide-large w3-hide-medium">New arrivals</h1>
+    <h1 class="w3-hide-small">COLLECTION 2020</h1>
+    <p><a href="#jeans" class="w3-button w3-black w3-padding-large w3-large">SHOP NOW</a></p>
+  </div>
+</div>
+
+<div class="w3-container w3-text-grey" id="jeans">
+  <p>8 items</p>
+</div>
+
+<!-- Product grid -->
+<div class="w3-row">
+  <div class="w3-col l3 s6">
+    <div class="w3-container">
+      <a href="/a1?view=1"><img src="{{url_for('static', filename='images/jeans1.jpg')}}" style="width:100%"></a>
+      <p>item1<br><b>$24.99</b></p>
+    </div>
+    <div class="w3-container">
+      <a href="/a1?view=2"><img src="{{url_for('static', filename='images/jeans2.jpg')}}" style="width:100%"></a>
+      <p>item2<br><b>$19.99</b></p>
+    </div>
+  </div>
+
+  <div class="w3-col l3 s6">
+    <div class="w3-container">
+      <div class="w3-display-container">
+        <a href="/a1?view=3"><img src="{{url_for('static', filename='images/jeans2.jpg')}}" style="width:100%"></a>
+      </div>
+      <p>item3<br><b>$19.99</b></p>
+    </div>
+    <div class="w3-container">
+      <a href="/a1?view=4"><img src="{{url_for('static', filename='images/jeans3.jpg')}}" style="width:100%"></a>
+      <p>item4<br><b>$20.50</b></p>
+    </div>
+  </div>
+
+  <div class="w3-col l3 s6">
+    <div class="w3-container">
+      <a href="/a2?view=1"><img src="{{url_for('static', filename='images/jeans3.jpg')}}" style="width:100%"></a>
+      <p>item5<br><b>$20.50</b></p>
+    </div>
+    <div class="w3-container">
+      <div class="w3-display-container">
+        <a href="/a2?view=2"><img src="{{url_for('static', filename='images/jeans4.jpg')}}" style="width:100%"></a>
+      </div>
+      <p>item6<br><b>$14.99</b></p>
+    </div>
+  </div>
+
+  <div class="w3-col l3 s6">
+    <div class="w3-container">
+      <a href="/a2?view=3"><img src="{{url_for('static', filename='images/jeans4.jpg')}}" style="width:100%"></a>
+      <p>item7<br><b>$14.99</b></p>
+    </div>
+    <div class="w3-container">
+      <a href="/a2?view=4"><img src="{{url_for('static', filename='images/jeans1.jpg')}}" style="width:100%"></a>
+      <p>item8<br><b>$24.99</b></p>
+    </div>
+  </div>
+</div>
+<div class="w3-center">
+<div class="w3-bar w3-border">
+  <a href="#" class="w3-bar-item w3-button">&laquo;</a>
+  <a href="#" class="w3-bar-item w3-button w3-gray">1</a>
+  <a href="#" class="w3-bar-item w3-button">2</a>
+  <a href="#" class="w3-bar-item w3-button">3</a>
+  <a href="#" class="w3-bar-item w3-button">4</a>
+  <a href="#" class="w3-bar-item w3-button">&raquo;</a>
+</div>
+</div>
+<!-- Subscribe section -->
+<div class="w3-container w3-white w3-padding-32">
+  <ul>
+    <li>고객센터 [<a href="#">FAQ</a>   <a href="#">1:1질문하기</a>   <a href="#">이메일문의</a>]</li>
+    <li>대표전화 <a href="#">010-3065-5770</a></li>
+    <li>오전9시-오후6시(토,일, 공휴일 휴무)</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+
+<div class="w3-black w3-center w3-padding-24">대두 G&S</div>
+
+<!-- End page content -->
+
+<!-- Newsletter Modal -->
+<div id="newsletter" class="w3-modal">
+<div class="w3-modal-content w3-animate-zoom" style="padding:32px">
+  <div class="w3-container w3-white w3-center">
+    <i onclick="document.getElementById('newsletter').style.display='none'" class="fa fa-remove w3-right w3-button w3-transparent w3-xxlarge"></i>
+    <h2 class="w3-wide">NEWSLETTER</h2>
+    <p>Join our mailing list to receive updates on new arrivals and special offers.</p>
+    <p><input class="w3-input w3-border" type="text" placeholder="Enter e-mail"></p>
+    <button type="button" class="w3-button w3-padding-large w3-red w3-margin-bottom" onclick="document.getElementById('newsletter').style.display='none'">Subscribe</button>
+  </div>
+</div>
+</div>
+
+{% endblock %}

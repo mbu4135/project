@@ -1,0 +1,310 @@
+{% extends 'layout.html' %}
+
+{% block title %} but_product {% endblock %}
+
+{% block body %}
+{% from "includes/_formhelpers.html" import render_field %}
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default my-4">
+            <div class="panel-heading">
+                <i class="fa fa-bar-chart-o fa-fw"></i>Product Info
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-lg-12">
+                        {% if product %}
+                        <div class="table-responsive">
+                          <table class="table table-bordered table-hover table-striped">
+                              <thead>
+                              <tr>
+                                  <th>상품정보</th>
+                                  <th>수량</th>
+                                  <th>상품금액</th>
+                                  <th>할인금액</th>
+                                  <th>주문금액</th>
+                              </tr>
+                              </thead>
+                              <tbody>
+                              {% for product in product %}
+                              <tr>
+                                  <td>{{product.pName}}</td>
+                                  <td>{{product.quantity}}</td>
+                                  <td>{{product.price}}</td>
+                                  <td>0</td>
+                                  <td>{{product.total_price}}</td>
+                              </tr>
+                              {% endfor %}
+                              <tr>
+                              {% for product in total %}
+                                <td>총합</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>{{product.total_price}}</td>
+                              </tr>
+                              {% endfor%}
+                              </tbody>
+                          </table>
+                        </div>
+                        {% else %}
+                        <h3>No orders found</h3>
+                        {% endif %}
+                        <!-- /.table-responsive -->
+                    </div>
+                </div>
+                <!-- /.row -->
+            </div>
+            <!-- /.panel-body -->
+        </div>
+    </div>
+</div>
+<form action="/buy_product" method="post">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default my-4">
+            <div class="panel-heading">
+                <i class="fa fa-bar-chart-o fa-fw"></i>Recipient Info
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-lg-12">
+                        {% if recipient %}
+                        {% for product in recipient %}
+                        <ul>
+                          <li>수령인/배송지명</li>
+                          <li><input type="text" name="username" value="{{product.username}}"></li>
+                        </ul>
+                        <ul>
+                          <li>휴대전화</li>
+                          <li><input type="text" name="rmobile1" value="{{product.rmobile1}}">-<input type="text" name="rmobile2" value="{{product.rmobile2}}">-<input type="text" name="rmobile3" value="{{product.rmobile3}}"></li>
+                        </ul>
+                          <ul>
+                            <li>배송지 주소</li>
+                            <li><input type="text" style="width: 60px" name="addnum" value="{{product.addnum}}" id="sample6_postcode" placeholder="우편번호"></li>
+                            <input type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
+                            <br>
+                            <input type="text" style="width: 340px" class="address" name="oplace" value="{{product.oplace}}" id="sample6_address" placeholder="주소" readonly>
+                            <input type="text" style="width: 140px" class="address_detail" name="oplacee" value="{{product.oplacee}}" id="sample6_extraAddress" placeholder="참고항목">
+                            <input type="text" style="width: 200px" class="address_detail" name="oplaced" value="{{product.oplaced}}"id="sample6_detailAddress" placeholder="상세주소">
+                          </ul>
+                        <ul>
+                          <li>배송 메모<br></li>
+                          <li>
+                            {{render_field(form.memo, class_="form-control")}}
+                            <p>택배기사님께 전할 말씀을 적어주세요.</p>
+                          </li>
+                        </ul>
+
+                        <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+                        <script>
+                            function sample6_execDaumPostcode() {
+                                new daum.Postcode({
+                                    oncomplete: function(data) {
+                                        // 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+
+                                        // 각 주소의 노출 규칙에 따라 주소를 조합한다.
+                                        // 내려오는 변수가 값이 없는 경우엔 공백('')값을 가지므로, 이를 참고하여 분기 한다.
+                                        var addr = ''; // 주소 변수
+                                        var extraAddr = ''; // 참고항목 변수
+
+                                        //사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+                                        if (data.userSelectedType === 'R') { // 사용자가 도로명 주소를 선택했을 경우
+                                            addr = data.roadAddress;
+                                        } else { // 사용자가 지번 주소를 선택했을 경우(J)
+                                            addr = data.jibunAddress;
+                                        }
+
+                                        // 사용자가 선택한 주소가 도로명 타입일때 참고항목을 조합한다.
+                                        if(data.userSelectedType === 'R'){
+                                            // 법정동명이 있을 경우 추가한다. (법정리는 제외)
+                                            // 법정동의 경우 마지막 문자가 "동/로/가"로 끝난다.
+                                            if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                                                extraAddr += data.bname;
+                                            }
+                                            // 건물명이 있고, 공동주택일 경우 추가한다.
+                                            if(data.buildingName !== '' && data.apartment === 'Y'){
+                                                extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                                            }
+                                            // 표시할 참고항목이 있을 경우, 괄호까지 추가한 최종 문자열을 만든다.
+                                            if(extraAddr !== ''){
+                                                extraAddr = ' (' + extraAddr + ')';
+                                            }
+                                            // 조합된 참고항목을 해당 필드에 넣는다.
+                                            document.getElementById("sample6_extraAddress").value = extraAddr;
+
+                                        } else {
+                                            document.getElementById("sample6_extraAddress").value = '';
+                                        }
+
+                                        // 우편번호와 주소 정보를 해당 필드에 넣는다.
+                                        document.getElementById('sample6_postcode').value = data.zonecode;
+                                        document.getElementById("sample6_address").value = addr;
+                                        // 커서를 상세주소 필드로 이동한다.
+                                        document.getElementById("sample6_detailAddress").focus();
+                                    }
+                                }).open();
+                            }
+                        </script>
+                        {% endfor %}
+                        {% else %}
+                        <ul>
+                          <li>수령인/배송지명</li>
+                          <li><input type="text" name="username" value="{{session['ofname']}}"></li>
+                        </ul>
+                        <ul>
+                          <li>휴대전화</li>
+                          <li><input type="text" name="rmobile1"">-<input type="text" name="rmobile2">-<input type="text" name="rmobile3"></li>
+                        </ul>
+                          <ul>
+                            <li>배송지 주소</li>
+                            <li><input type="text" name="addnum" id="sample6_postcode" placeholder="우편번호"></li>
+                            <input type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
+                            <br>
+                            <input type="text" class="address" name="oplace" id="sample6_address" placeholder="주소" readonly>
+                            <input type="text" class="address_detail" name="oplacee" id="sample6_extraAddress" placeholder="참고항목">
+                            <input type="text" class="address_detail" name="oplaced" id="sample6_detailAddress" placeholder="상세주소">
+                          </ul>
+                        <ul>
+                          <li>배송 메모<br></li>
+                          <li>
+                            {{render_field(form.memo, class_="form-control")}}
+                            <p>택배기사님께 전할 말씀을 적어주세요.</p>
+                          </li>
+                        </ul>
+
+                        <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+                        <script>
+                            function sample6_execDaumPostcode() {
+                                new daum.Postcode({
+                                    oncomplete: function(data) {
+                                        // 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+
+                                        // 각 주소의 노출 규칙에 따라 주소를 조합한다.
+                                        // 내려오는 변수가 값이 없는 경우엔 공백('')값을 가지므로, 이를 참고하여 분기 한다.
+                                        var addr = ''; // 주소 변수
+                                        var extraAddr = ''; // 참고항목 변수
+
+                                        //사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+                                        if (data.userSelectedType === 'R') { // 사용자가 도로명 주소를 선택했을 경우
+                                            addr = data.roadAddress;
+                                        } else { // 사용자가 지번 주소를 선택했을 경우(J)
+                                            addr = data.jibunAddress;
+                                        }
+
+                                        // 사용자가 선택한 주소가 도로명 타입일때 참고항목을 조합한다.
+                                        if(data.userSelectedType === 'R'){
+                                            // 법정동명이 있을 경우 추가한다. (법정리는 제외)
+                                            // 법정동의 경우 마지막 문자가 "동/로/가"로 끝난다.
+                                            if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                                                extraAddr += data.bname;
+                                            }
+                                            // 건물명이 있고, 공동주택일 경우 추가한다.
+                                            if(data.buildingName !== '' && data.apartment === 'Y'){
+                                                extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                                            }
+                                            // 표시할 참고항목이 있을 경우, 괄호까지 추가한 최종 문자열을 만든다.
+                                            if(extraAddr !== ''){
+                                                extraAddr = ' (' + extraAddr + ')';
+                                            }
+                                            // 조합된 참고항목을 해당 필드에 넣는다.
+                                            document.getElementById("sample6_extraAddress").value = extraAddr;
+
+                                        } else {
+                                            document.getElementById("sample6_extraAddress").value = '';
+                                        }
+
+                                        // 우편번호와 주소 정보를 해당 필드에 넣는다.
+                                        document.getElementById('sample6_postcode').value = data.zonecode;
+                                        document.getElementById("sample6_address").value = addr;
+                                        // 커서를 상세주소 필드로 이동한다.
+                                        document.getElementById("sample6_detailAddress").focus();
+                                    }
+                                }).open();
+                            }
+                        </script>
+                        {% endif %}
+                        <!-- /.table-responsive -->
+                    </div>
+                </div>
+                <!-- /.row -->
+            </div>
+            <!-- /.panel-body -->
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default my-4">
+            <div class="panel-heading">
+                <i class="fa fa-bar-chart-o fa-fw"></i>Payment Info/Agreement
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-lg-12">
+                        {% if product %}
+                        <div>
+                           <ul>
+                             <li>결제 수단</li>
+                             <li>
+                               <label>
+                                 <input type="radio">신용 카드
+                               </label>
+                             </li>
+                             <li>
+                               <label>
+                                 <input type="radio">무통장 입금
+                               </label>
+                             </li>
+                           </ul>
+                           <ul>
+                             <li>결제 안내</li>
+                             <li>
+                               <div class="card">
+                                 <div class="card_select">
+                                   <select class="card_code">
+                                     <option>카드 선택</option>
+                                     <option value="CCKM|11">KB 국민</option>
+                                     <option value="CCPH|33">우리카드</option>
+                                   </select>
+                                 </div>
+                               </div>
+                             </li>
+                           </ul>
+                           <ul>
+                             <li>품절 시 처리 방법</li>
+                             <li>
+                               <div>
+                                 <div>
+                                   <span>Refund</span>
+                                   <span>환불</span>
+                                 </div>
+                                 <p>
+                                   환불을 선택하시면 별도의 연락없이 <br>
+                                   선택하신 결제 방법으로 환불해 드립니다.
+                                 </p>
+                               </div>
+                             </li>
+                           </ul>
+                        </div>
+                        <div>
+                          <button type="submit">결제하기</button>
+                        </div>
+                        {% else %}
+                        <h3>No orders found</h3>
+                        {% endif %}
+                        <!-- /.table-responsive -->
+                    </div>
+                </div>
+                <!-- /.row -->
+            </div>
+            <!-- /.panel-body -->
+        </div>
+    </div>
+</div>
+</form>
+{% endblock %}

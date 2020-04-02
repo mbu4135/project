@@ -1,0 +1,32 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="jumbotron">
+    <h2 style="text-align: center; color: #206aaa;">Sign Up Form</h2>
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form method="POST" action="/register">
+        <div class="form-group">
+            {{render_field(form.username, class_="form-control")}}
+        </div>
+        <div class="form-group">
+            {{render_field(form.email, class="form-control")}}
+        </div>
+        <div class="form-group">
+            {{render_field(form.password, class="form-control")}}
+        </div>
+        <p>휴대전화</p>
+        <div class="form-group" style="display:inline-block">
+          {{render_field(form.rmobile1)}} -
+        </div>
+        <div class="form-group" style="display:inline-block">
+          {{render_field(form.rmobile2)}} -
+        </div>
+        <div class="form-group" style="display:inline-block">
+          {{render_field(form.rmobile3)}}
+        </div>
+        <p>
+            <input type="submit" class="btn btn-primary" value="Sign Up">
+        </p>
+    </form>
+</div>
+{% endblock %}
