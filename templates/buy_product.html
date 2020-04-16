@@ -74,15 +74,15 @@
                     <div class="col-lg-12">
                         {% if recipient %}
                         {% for product in recipient %}
-                        <ul>
+                        <ul style="list-style-type:none">
                           <li>수령인/배송지명</li>
                           <li><input type="text" name="username" value="{{product.username}}"></li>
                         </ul>
-                        <ul>
+                        <ul style="list-style-type:none">
                           <li>휴대전화</li>
                           <li><input type="text" name="rmobile1" value="{{product.rmobile1}}">-<input type="text" name="rmobile2" value="{{product.rmobile2}}">-<input type="text" name="rmobile3" value="{{product.rmobile3}}"></li>
                         </ul>
-                          <ul>
+                          <ul style="list-style-type:none">
                             <li>배송지 주소</li>
                             <li><input type="text" style="width: 60px" name="addnum" value="{{product.addnum}}" id="sample6_postcode" placeholder="우편번호"></li>
                             <input type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
@@ -91,7 +91,7 @@
                             <input type="text" style="width: 140px" class="address_detail" name="oplacee" value="{{product.oplacee}}" id="sample6_extraAddress" placeholder="참고항목">
                             <input type="text" style="width: 200px" class="address_detail" name="oplaced" value="{{product.oplaced}}"id="sample6_detailAddress" placeholder="상세주소">
                           </ul>
-                        <ul>
+                        <ul style="list-style-type:none">
                           <li>배송 메모<br></li>
                           <li>
                             {{render_field(form.memo, class_="form-control")}}
@@ -151,15 +151,15 @@
                         </script>
                         {% endfor %}
                         {% else %}
-                        <ul>
+                        <ul style="list-style-type:none">
                           <li>수령인/배송지명</li>
                           <li><input type="text" name="username" value="{{session['ofname']}}"></li>
                         </ul>
-                        <ul>
+                        <ul style="list-style-type:none">
                           <li>휴대전화</li>
                           <li><input type="text" name="rmobile1"">-<input type="text" name="rmobile2">-<input type="text" name="rmobile3"></li>
                         </ul>
-                          <ul>
+                          <ul style="list-style-type:none">
                             <li>배송지 주소</li>
                             <li><input type="text" name="addnum" id="sample6_postcode" placeholder="우편번호"></li>
                             <input type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
@@ -168,7 +168,7 @@
                             <input type="text" class="address_detail" name="oplacee" id="sample6_extraAddress" placeholder="참고항목">
                             <input type="text" class="address_detail" name="oplaced" id="sample6_detailAddress" placeholder="상세주소">
                           </ul>
-                        <ul>
+                        <ul style="list-style-type:none">
                           <li>배송 메모<br></li>
                           <li>
                             {{render_field(form.memo, class_="form-control")}}
@@ -248,7 +248,7 @@
                     <div class="col-lg-12">
                         {% if product %}
                         <div>
-                           <ul>
+                           <ul style="list-style-type:none">
                              <li>결제 수단</li>
                              <li>
                                <label>
@@ -261,7 +261,7 @@
                                </label>
                              </li>
                            </ul>
-                           <ul>
+                           <ul style="list-style-type:none">
                              <li>결제 안내</li>
                              <li>
                                <div class="card">
@@ -275,7 +275,7 @@
                                </div>
                              </li>
                            </ul>
-                           <ul>
+                           <ul style="list-style-type:none">
                              <li>품절 시 처리 방법</li>
                              <li>
                                <div>
@@ -292,7 +292,7 @@
                            </ul>
                         </div>
                         <div>
-                          <button type="submit">결제하기</button>
+                          <button type="submit" class="btn btn-success" style="width: 200px; margin-left:50px">결제하기</button>
                         </div>
                         {% else %}
                         <h3>No orders found</h3>

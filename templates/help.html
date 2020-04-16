@@ -1,0 +1,190 @@
+{% extends 'layout.html' %}
+
+{% block title %} help {% endblock %}
+
+{% block body %}
+{% from "includes/_formhelpers.html" import render_field %}
+<!-- !PAGE CONTENT! -->
+<div class="w3-main w3-white" style="margin-left:20px">
+
+  <!-- Push down content on small screens -->
+  <div class="w3-hide-large" style="margin-top:10px"></div>
+
+  <!-- Slideshow Header -->
+  <div class="w3-row-padding w3-section">
+    <div class="w3-col s4 w3-card w3-hover-light-grey" style="height:80px" onclick="currentDiv(1)">
+      <p>
+        <span onclick="currentDiv(1)">Tel. 010-3065-5770</span>
+        <br>
+        <span>평일 9:00~18:00(점심 12:00~13:00)</span><br>
+        <span>이메일 : mbu4135@gmail.com</span>
+      </p>
+    </div>
+    <div class="w3-col s4 w3-border w3-card w3-hover-light-grey" style="height:80px" onclick="currentDiv(2)">
+      <p>
+        <span>1:1 Q&A</span>
+        <br>
+        <span>질문 전 FAQ(자주 묻는 질문)
+          <br>을 먼저 확인해 주세요.</span>
+      </p>
+    </div>
+    <div class="w3-col s4 w3-border w3-card w3-hover-light-grey" style="height:80px" onclick="currentDiv(3)">
+      <p>
+        <span>FAQ</span>
+        <br>
+        <span>자주 묻는 질문</span>
+      </p>
+    </div>
+  </div>
+  <div class="w3-container" id="apartment">
+    <h2 class="w3-text-green">Q&A</h2>
+    <div class="w3-display-container mySlides w3-border">
+      <h3>1:1 Q&A</h3>
+      <ul>
+        <li>냉동식품의 경우 아이스박스 구매를 해주셔야 합니다.(4만원 이상 결제시 무료)</li>
+        <li>제품 사용, 오염, 전용 박스 손상, 라벨 제거, 사은품 및 부속 사용/분실 시, 교환/환불이 불가능 합니다.</li>
+        <li>제품 이상시 mbu4135@gmail.com 으로 사진을 첨부하여 이메일을 보내주시면 환불 해드립니다.</li>
+        <li>1:1문의 처리 내역은 마이페이지>1:1문의를 통해 확인하실 수 있습니다.</li>
+        <li>상품 정보 관련 문의는 해당 상품 문의에 남기셔야 빠른 답변이 가능합니다.</li>
+      </ul>
+      <form action="/help" method="post">
+        <table class="w3-table">
+          <tbody>
+            <tr>
+              <th style="width:170px">문의 유형</th>
+              <td><input type="text" name="selec" style="width:435px" placeholder="ex)환불, 교환 등등.."></td>
+            </tr>
+            <tr>
+              <th style="width:170px">작성자</th>
+              <td><input type="text" name="name" style="width:435px"></td>
+            </tr>
+          <tr>
+            <th style="width:170px">휴대전화</th>
+            <td><input type="text" name="phone" style="width:435px" placeholder="-은 빼고 입력하세요"></td>
+          </tr>
+          <tr>
+            <th style="width:170px">이메일</th>
+            <td><input type="text" name="email" style="width:435px"></td>
+          </tr>
+          <tr>
+            <th style="width:170px">제목</th>
+            <td><input type="text" name="title" style="width:435px"></td>
+          </tr>
+          <tr>
+            <th style="width:170px">문의내용</th>
+            <td><textarea name="contents" cols="59" rows="10"></textarea></td>
+          </tr>
+          </tbody>
+        </table>
+        <button type="submit" class="btn btn-success" style="margin-top:20px; margin-bottom:20px; margin-left:400px">작성하기</button>
+      </form>
+    </div>
+    <div class="w3-display-container mySlides w3-border">
+      <h3>1:1 Q&A</h3>
+      <ul>
+        <li>냉동식품의 경우 아이스박스 구매를 해주셔야 합니다.(4만원 이상 결제시 무료)</li>
+        <li>제품 사용, 오염, 전용 박스 손상, 라벨 제거, 사은품 및 부속 사용/분실 시, 교환/환불이 불가능 합니다.</li>
+        <li>제품 이상시 mbu4135@gmail.com 으로 사진을 첨부하여 이메일을 보내주시면 환불 해드립니다.</li>
+        <li>1:1문의 처리 내역은 마이페이지>1:1문의를 통해 확인하실 수 있습니다.</li>
+        <li>상품 정보 관련 문의는 해당 상품 문의에 남기셔야 빠른 답변이 가능합니다.</li>
+      </ul>
+      <form action="/help" method="post">
+        <table class="w3-table">
+          <tbody>
+            <tr>
+              <th style="width:170px">문의 유형</th>
+              <td><input type="text" name="selec" style="width:435px" placeholder="ex)환불, 교환 등등.."></td>
+            </tr>
+            <tr>
+              <th style="width:170px">작성자</th>
+              <td><input type="text" name="name" style="width:435px"></td>
+            </tr>
+          <tr>
+            <th style="width:170px">휴대전화</th>
+            <td><input type="text" name="phone" style="width:435px" placeholder="-은 빼고 입력하세요"></td>
+          </tr>
+          <tr>
+            <th style="width:170px">이메일</th>
+            <td><input type="text" name="email" style="width:435px"></td>
+          </tr>
+          <tr>
+            <th style="width:170px">제목</th>
+            <td><input type="text" name="title" style="width:435px"></td>
+          </tr>
+          <tr>
+            <th style="width:170px">문의내용</th>
+            <td><textarea name="contents" cols="59" rows="10"></textarea></td>
+          </tr>
+          </tbody>
+        </table>
+        <button type="submit" class="btn btn-success" style="margin-top:20px; margin-bottom:20px; margin-left:400px">작성하기</button>
+      </form>
+    </div>
+    <div class="w3-display-container mySlides w3-border">
+      <table class="w3-table">
+        <tbody>
+          <tr>
+            <th style="width:70px">1</th>
+            <td><a href="/FAQ1" style="text-decoration:none">배송 관련 기본 사항입니다.</a></td>
+          </tr>
+          <tr>
+            <th style="width:70px">2</th>
+            <td><a href="/FAQ2" style="text-decoration:none">환불 접수 및 절차</a></td>
+          </tr>
+        <tr>
+          <th style="width:70px">3</th>
+          <td><a href="/FAQ3" style="text-decoration:none">환불 시 주의 사항</a></td>
+        </tr>
+        <tr>
+          <th style="width:70px">4</th>
+          <td><a href="/FAQ4" style="text-decoration:none">상품 불량, 오배송 환불</a></td>
+        </tr>
+        <tr>
+          <th style="width:70px">5</th>
+          <td><a href="/FAQ5" style="text-decoration:none">배송 준비 중/ 발송 후 주소지를 변경할 수 있나요?</a></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<script>
+// Script to open and close sidebar when on tablets and phones
+function w3_open() {
+  document.getElementById("mySidebar").style.display = "block";
+  document.getElementById("myOverlay").style.display = "block";
+}
+
+function w3_close() {
+  document.getElementById("mySidebar").style.display = "none";
+  document.getElementById("myOverlay").style.display = "none";
+}
+
+// Slideshow Apartment Images
+var slideIndex = 1;
+showDivs(slideIndex);
+
+function plusDivs(n) {
+  showDivs(slideIndex += n);
+}
+
+function currentDiv(n) {
+  showDivs(slideIndex = n);
+}
+
+function showDivs(n) {
+  var i;
+  var x = document.getElementsByClassName("mySlides");
+  var dots = document.getElementsByClassName("demo");
+  if (n > x.length) {slideIndex = 1}
+  if (n < 1) {slideIndex = x.length}
+  for (i = 0; i < x.length; i++) {
+    x[i].style.display = "none";
+  }
+  for (i = 0; i < dots.length; i++) {
+    dots[i].className = dots[i].className.replace(" w3-opacity-off", "");
+  }
+  x[slideIndex-1].style.display = "block";
+  dots[slideIndex-1].className += " w3-opacity-off";
+}
+</script>
+{% endblock %}

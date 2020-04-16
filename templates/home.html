@@ -80,12 +80,36 @@
 </div>
 </div>
 <!-- Subscribe section -->
-<div class="w3-container w3-white w3-padding-32">
+<div class="w3-container w3-white w3-padding-32 w3-row">
+<div class="w3-container w3-col m9">
   <ul>
-    <li>고객센터 [<a href="#">FAQ</a>   <a href="#">1:1질문하기</a>   <a href="#">이메일문의</a>]</li>
-    <li>대표전화 <a href="#">010-3065-5770</a></li>
+    <li>고객센터 [<a href="/help">FAQ</a>   <a href="/help">1:1질문하기</a>   <a href="/help">이메일문의</a>]</li>
+    <li>대표전화 <a href="01030655770">010-3065-5770</a></li>
     <li>오전9시-오후6시(토,일, 공휴일 휴무)</li>
   </ul>
+</div>
+<div class="w3-container w3-col m3">
+  <!-- KB에스크로 이체 인증마크 적용 시작 -->
+<script>
+function onPopKBAuthMark()
+{
+window.open('','KB_AUTHMARK','height=604, width=648, status=yes, toolbar=no, menubar=no,
+ location=no');
+document.KB_AUTHMARK_FORM.action='https://okbfex.kbstar.com/quics';
+document.KB_AUTHMARK_FORM.target='KB_AUTHMARK';
+document.KB_AUTHMARK_FORM.submit();
+}
+</script>
+<form name="KB_AUTHMARK_FORM" method="get">
+<input type="hidden" name="page" value="C021590"/>
+<input type="hidden" name="cc" value="b034066:b035526"/>
+<input type="hidden" name="mHValue" value='ad0ee809f526591543cfdc75faa450f3202004161858629'/>
+</form>
+<a href="#" onclick="javascript:onPopKBAuthMark();return false;">
+<img src="http://img1.kbstar.com/img/escrow/escrowcmark.gif" border="0"/>
+</a>
+<!-- KB에스크로이체 인증마크 적용 종료 -->
+</div>
 </div>
 
 <!-- Footer -->

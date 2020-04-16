@@ -227,13 +227,14 @@
                                   </tbody>
                               </table>
                             </div>
+                            <strong><p>냉동식품의 경우 아이스박스 구매를 해주셔야 합니다.(4만원 이상 결제시 무료)</p></strong>
                             <form action="/carts" method="post">
                               <input type="hidden" name="num" value="0">
                               <input type="hidden" name="icebox" value="1">
-                              <input type="submit" class="btn btn-primary" name="delete" value="아이스박스 추가">
+                              <input type="submit" class="btn btn-success" name="delete" value="아이스박스 추가" style="width: 200px">
                             </form>
                             <div>
-                              <a href="/buy_product"><input type="text" class="btn btn-primary" value="주문하기"></a>
+                              <a href="/buy_product"><input type="text" class="btn btn-success" value="주문하기" style="width: 200px"></a>
                             </div>
                             {% else %}
                             <h3>No orders found</h3>
