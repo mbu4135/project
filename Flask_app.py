@@ -482,7 +482,7 @@ def carts():
         return render_template('carts.html', form=form, result=result, order_rows=order_rows, row1=row1,row2=row2,row3=row3,row4=row4,row5=row5,row6=row6,row7=row7,row8=row8,row9=row9,row10=row10,row11=row11,row12=row12,row13=row13,row14=row14,row15=row15,row16=row16,row17=row17,row18=row18,row19=row19,row20=row20,row21=row21)
     else:
         return render_template('carts.html')
-        
+
 class BuyForm(Form):
     username = StringField('', [validators.length(min=3, max=10)],
                        render_kw={'autofocus': True})

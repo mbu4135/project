@@ -1,0 +1,117 @@
+{% extends 'layout.html' %}
+
+{% block title %} home {% endblock %}
+
+{% block body %}
+
+{% for product in d2 %}
+<!-- !PAGE CONTENT! -->
+<div class="w3-main w3-white" style="margin-left:20px">
+
+  <!-- Push down content on small screens -->
+  <div class="w3-hide-large" style="margin-top:10px"></div>
+
+  <!-- Slideshow Header -->
+  <div class="w3-container" id="apartment">
+    <h2 class="w3-text-green">과일류/다이스/후르츠필</h2>
+    <div class="w3-row">
+    <div class="w3-col s9">
+    <div class="w3-display-container mySlides">
+    <img src="static/image/products/{{product.category}}/{{product.picture}}" style="height:390px;width:100%;margin-bottom:-6px">
+      <div class="w3-display-bottomleft w3-container w3-black">
+        <p>1</p>
+      </div>
+    </div>
+    <div class="w3-display-container mySlides">
+    <img src="static/image/products/{{product.category}}/2/{{product.picture}}" style="height:390px;width:100%;margin-bottom:-6px">
+      <div class="w3-display-bottomleft w3-container w3-black">
+        <p>2</p>
+      </div>
+    </div>
+    <div class="w3-display-container mySlides">
+    <img src="static/image/products/{{product.category}}/3/{{product.picture}}" style="height:390px;width:100%;margin-bottom:-6px">
+      <div class="w3-display-bottomleft w3-container w3-black">
+        <p>3</p>
+      </div>
+    </div>
+  </div>
+    <div class="w3-col s3">
+      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/{{product.picture}}" style="height:130px;width:100%;cursor:pointer" onclick="currentDiv(1)" title="제품 1">
+      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/2/{{product.picture}}" style="height:130px;width:100%;cursor:pointer" onclick="currentDiv(2)" title="제품 2">
+      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/3/{{product.picture}}" style="height:130px;width:100%;cursor:pointer" onclick="currentDiv(3)" title="제품 3">
+    </div>
+  </div>
+ </div>
+
+  <div class="w3-container">
+    <h4><strong>상품 내용</strong></h4>
+    <div class="w3-row w3-large">
+      <div class="w3-col s6">
+        <p>상품 이름: {{ product.pName}}</p>
+        <p>가격: {{ product.price}}</p>
+        <p>내용물: {{ product.description}}</p>
+      </div>
+      <div class="w3-col s6">
+        <p>아이스박스 포장: {{product.info1}}</p>
+        <p>{{product.info2}}</p>
+      </div>
+    </div>
+    <a href="/{{product.category}}?order={{product.id}}" class="btn btn-success">장바구니 담기</a>
+    <hr>
+
+
+    <h4><strong>제품 설명</strong></h4>
+    <p>{{product.info3}}</p>
+    <hr>
+
+    <h4><strong>부가 설명</strong></h4>
+    <p>{{product.info4}}</p>
+    </div>
+  <hr>
+  {% endfor %}
+
+<!-- End page content -->
+</div>
+
+<script>
+// Script to open and close sidebar when on tablets and phones
+function w3_open() {
+  document.getElementById("mySidebar").style.display = "block";
+  document.getElementById("myOverlay").style.display = "block";
+}
+
+function w3_close() {
+  document.getElementById("mySidebar").style.display = "none";
+  document.getElementById("myOverlay").style.display = "none";
+}
+
+// Slideshow Apartment Images
+var slideIndex = 1;
+showDivs(slideIndex);
+
+function plusDivs(n) {
+  showDivs(slideIndex += n);
+}
+
+function currentDiv(n) {
+  showDivs(slideIndex = n);
+}
+
+function showDivs(n) {
+  var i;
+  var x = document.getElementsByClassName("mySlides");
+  var dots = document.getElementsByClassName("demo");
+  if (n > x.length) {slideIndex = 1}
+  if (n < 1) {slideIndex = x.length}
+  for (i = 0; i < x.length; i++) {
+    x[i].style.display = "none";
+  }
+  for (i = 0; i < dots.length; i++) {
+    dots[i].className = dots[i].className.replace(" w3-opacity-off", "");
+  }
+  x[slideIndex-1].style.display = "block";
+  dots[slideIndex-1].className += " w3-opacity-off";
+}
+</script>
+
+{% endblock %}
