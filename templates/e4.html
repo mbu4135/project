@@ -1,0 +1,99 @@
+{% extends 'layout2.html' %}
+
+{% block title %} 1_1 {% endblock %}
+
+{% block body %}
+
+<!-- Sidebar/menu -->
+<nav class="w3-sidebar w3-bar-block w3-white w3-collapse w3-top" style="z-index:3;width:250px" id="mySidebar">
+  <div class="w3-container w3-display-container w3-padding-16">
+    <i onclick="w3_close()" class="fa fa-remove w3-hide-large w3-button w3-display-topright"></i>
+    <a href="/"><h1 class="w3-wide" style="font-size:25px"><b>베이커리24</b></h1></a>
+  </div>
+  <div class="w3-padding-64 w3-large w3-text-grey" style="font-weight:bold">
+    <a href="/a1" class="w3-bar-item w3-button">냉동생지/에어프라이어생지</a>
+    <a href="/b1" class="w3-bar-item w3-button">베이킹재료</a>
+    <a href="/c1" class="w3-bar-item w3-button">유제품/유지류</a>
+    <a href="/d1" class="w3-bar-item w3-button">견과/과일</a>
+    <a onclick="myAccFunc()" href="javascript:void(0)" class="w3-button w3-block w3-white w3-left-align" id="myBtn">
+      초콜릿/코코아분말 <i class="fa fa-caret-down"></i>
+    </a>
+    <div id="demoAcc" class="w3-bar-block w3-hide w3-padding-large w3-medium">
+      <a href="/e1" class="w3-bar-item w3-button">커버춰초콜릿</a>
+      <a href="/e2" class="w3-bar-item w3-button">컴파운드,코팅초콜릿</a>
+      <a href="/e3" class="w3-bar-item w3-button">초코칩,코코아분말,코코아가공품</a>
+      <a href="/e4" class="w3-bar-item w3-button w3-light-grey"><i class="fa fa-caret-right w3-margin-right"></i>가나슈,초콜릿장식,데코</a>
+    </div>
+    <a href="/f1" class="w3-bar-item w3-button">포장용품</a>
+  </div>
+  <a href="/mypage" class="w3-bar-item w3-button w3-padding"><p> 마이페이지</p></a>
+  <a href="01030655770" class="w3-bar-item w3-button w3-padding"><p><i class="fa fa-fw fa-phone"></i> 010-3065-5770</p></a>
+  <a href="/help" class="w3-bar-item w3-button w3-padding"><p><i class="fa fa-fw fa-envelope"></i> 고객센터</p></a>
+</nav>
+
+<!-- Top menu on small screens -->
+<header class="w3-bar w3-top w3-hide-large w3-black w3-xlarge">
+  <div class="w3-bar-item w3-padding-24 w3-wide">베이커리24</div>
+  <a href="javascript:void(0)" class="w3-bar-item w3-button w3-padding-24 w3-right" onclick="w3_open()"><i class="fa fa-bars"></i></a>
+</header>
+
+<!-- Overlay effect when opening sidebar on small screens -->
+<div class="w3-overlay w3-hide-large" onclick="w3_close()" style="cursor:pointer" title="close side menu" id="myOverlay"></div>
+
+<!-- !PAGE CONTENT! -->
+<div class="w3-main" style="margin-left:250px">
+
+  <!-- Push down content on small screens -->
+  <div class="w3-hide-large" style="margin-top:83px"></div>
+
+  <!-- Top header -->
+  <header class="w3-container w3-xlarge">
+    <p class="w3-left">신속 정확한 당일배송</p>
+    <p class="w3-right">
+      {% if session.logged_in %}
+      <span style="font-size:16px"><a href="/logout" style="text-decoration:none;">로그아웃</a></span>
+      {% else %}
+      <span style="font-size:16px"><a href="/login" style="text-decoration:none;"> 로그인 </a></span>
+      <span style="font-size:16px"><a href="/register" style="text-decoration:none;">회원가입</a></span>
+      {% endif %}
+      <a href="/carts"><span style="font-size:17px">장바구니</span> <i class="fa fa-shopping-cart w3-margin-right"></i></a>
+      <i class="fa fa-search"></i>
+    </p>
+  </header>
+  <!-- Page Content -->
+  <div class="container">
+      <div class="row">
+          <!-- /.col-lg-3 -->
+          <div class="col-lg-9">
+              <div class="row">
+                  {% for product in a1 %}
+                  <div class="col-12 col-sm-6 col-md-4 col-lg-4 col-xl-3 mb-4">
+                      <div class="card h-100">
+                          <a href="/e1?view={{product.id}}">
+                              <div class="card-img-top"
+                                   style="background: url('static/image/product/{{product.category}}/{{product.picture}}'); background-repeat:no-repeat; background-size: cover; height:200px;width:100% "></div>
+                          </a>
+                          <div class="card-body">
+                              <h5 class="card-title">
+                                  <a href="/e1?view={{product.id}}">{{ product.pName}}</a>
+                              </h5>
+                              <h4>{{product.price}}</h4>
+                          </div>
+                          <div class="card-footer">
+                              <small class="text-muted"></small>
+                          </div>
+                      </div>
+                  </div>
+                  {% endfor %}
+              </div>
+              <!-- /.row -->
+
+          </div>
+          <!-- /.col-lg-9 -->
+
+      </div>
+      <!-- /.row -->
+
+  </div>
+  <!-- /.container -->
+  {% endblock %}

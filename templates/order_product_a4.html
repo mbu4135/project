@@ -9,46 +9,35 @@
 
   <!-- Slideshow Header -->
   <div class="w3-container" id="apartment">
-    <h2 class="w3-text-green">쿠키류</h2>
+    <h2 class="w3-text-green">페스츄리/파이류</h2>
+    <div class="w3-row">
+    <div class="w3-col s9">
     <div class="w3-display-container mySlides">
-    <img src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;margin-bottom:-6px">
+    <img src="static/image/products/{{product.category}}/{{product.picture}}" style="height:390px;width:100%;margin-bottom:-6px">
       <div class="w3-display-bottomleft w3-container w3-black">
         <p>1</p>
       </div>
     </div>
     <div class="w3-display-container mySlides">
-    <img src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;margin-bottom:-6px">
+    <img src="static/image/products/{{product.category}}/2/{{product.picture}}" style="height:390px;width:100%;margin-bottom:-6px">
       <div class="w3-display-bottomleft w3-container w3-black">
         <p>2</p>
       </div>
     </div>
     <div class="w3-display-container mySlides">
-    <img src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;margin-bottom:-6px">
+    <img src="static/image/products/{{product.category}}/3/{{product.picture}}" style="height:390px;width:100%;margin-bottom:-6px">
       <div class="w3-display-bottomleft w3-container w3-black">
         <p>3</p>
       </div>
     </div>
-    <div class="w3-display-container mySlides">
-    <img src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;margin-bottom:-6px">
-      <div class="w3-display-bottomleft w3-container w3-black">
-        <p>4</p>
-      </div>
+  </div>
+    <div class="w3-col s3">
+      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/{{product.picture}}" style="height:130px;width:100%;cursor:pointer" onclick="currentDiv(1)" title="제품 1">
+      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/2/{{product.picture}}" style="height:130px;width:100%;cursor:pointer" onclick="currentDiv(2)" title="제품 2">
+      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/3/{{product.picture}}" style="height:130px;width:100%;cursor:pointer" onclick="currentDiv(3)" title="제품 3">
     </div>
   </div>
-  <div class="w3-row-padding w3-section">
-    <div class="w3-col s3">
-      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;cursor:pointer" onclick="currentDiv(1)" title="Living room">
-    </div>
-    <div class="w3-col s3">
-      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;cursor:pointer" onclick="currentDiv(2)" title="Dining room">
-    </div>
-    <div class="w3-col s3">
-      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;cursor:pointer" onclick="currentDiv(3)" title="Bedroom">
-    </div>
-    <div class="w3-col s3">
-      <img class="demo w3-opacity w3-hover-opacity-off" src="static/image/products/{{product.category}}/{{product.picture}}" style="width:100%;cursor:pointer" onclick="currentDiv(4)" title="Second Living Room">
-    </div>
-  </div>
+ </div>
 
   {% if session.logged_in %}
   <div class="card-body">

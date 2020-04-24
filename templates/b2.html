@@ -8,21 +8,26 @@
 <nav class="w3-sidebar w3-bar-block w3-white w3-collapse w3-top" style="z-index:3;width:250px" id="mySidebar">
   <div class="w3-container w3-display-container w3-padding-16">
     <i onclick="w3_close()" class="fa fa-remove w3-hide-large w3-button w3-display-topright"></i>
-    <a href="/"><h1 class="w3-wide" style="font-size:25px"><b>대두 G&S</b></h1></a>
+    <a href="/"><h1 class="w3-wide" style="font-size:25px"><b>베이커리24</b></h1></a>
   </div>
   <div class="w3-padding-64 w3-large w3-text-grey" style="font-weight:bold">
-    <a href="/a2" class="w3-bar-item w3-button">냉동생지</a>
+    <a href="/a1" class="w3-bar-item w3-button">냉동생지/에어프라이어생지</a>
     <a onclick="myAccFunc()" href="javascript:void(0)" class="w3-button w3-block w3-white w3-left-align" id="myBtn">
-      냉동완제 <i class="fa fa-caret-down"></i>
+      베이킹 재료 <i class="fa fa-caret-down"></i>
     </a>
     <div id="demoAcc" class="w3-bar-block w3-hide w3-padding-large w3-medium">
-      <a href="/b1" class="w3-bar-item w3-button">빵류</a>
-        <a href="/b2" class="w3-bar-item w3-button w3-light-grey"><i class="fa fa-caret-right w3-margin-right"></i>쿠키류</a>
+      <a href="/b1" class="w3-bar-item w3-button">밀가루,분말,곡물류</a>
+      <a href="/b2" class="w3-bar-item w3-button w3-light-grey"><i class="fa fa-caret-right w3-margin-right"></i>설탕,소금</a>
+      <a href="/b3" class="w3-bar-item w3-button">앙금,배기,퓨레,잼,스프레드,시럽</a>
+      <a href="/b4" class="w3-bar-item w3-button">이스트,젤라틴,개량제,첨가물</a>
+      <a href="/b5" class="w3-bar-item w3-button">오일,향료,향신료</a>
+      <a href="/b6" class="w3-bar-item w3-button">색소,데코,토핑</a>
+      <a href="/b7" class="w3-bar-item w3-button">캔,통조림</a>
     </div>
-    <a href="/c1" class="w3-bar-item w3-button">베이킹재료</a>
-    <a href="/d1" class="w3-bar-item w3-button">포장재료</a>
-    <a href="/e1" class="w3-bar-item w3-button">대량구매할인</a>
-    <a href="/f1" class="w3-bar-item w3-button">앙금</a>
+    <a href="/c1" class="w3-bar-item w3-button">유제품/유지류</a>
+    <a href="/d1" class="w3-bar-item w3-button">견과/과일</a>
+    <a href="/e1" class="w3-bar-item w3-button">초콜릿/코코아분말</a>
+    <a href="/f1" class="w3-bar-item w3-button">포장용품</a>
   </div>
   <a href="/mypage" class="w3-bar-item w3-button w3-padding"><p> 마이페이지</p></a>
   <a href="01030655770" class="w3-bar-item w3-button w3-padding"><p><i class="fa fa-fw fa-phone"></i> 010-3065-5770</p></a>
@@ -31,7 +36,7 @@
 
 <!-- Top menu on small screens -->
 <header class="w3-bar w3-top w3-hide-large w3-black w3-xlarge">
-  <div class="w3-bar-item w3-padding-24 w3-wide">LOGO</div>
+  <div class="w3-bar-item w3-padding-24 w3-wide">베이커리24</div>
   <a href="javascript:void(0)" class="w3-bar-item w3-button w3-padding-24 w3-right" onclick="w3_open()"><i class="fa fa-bars"></i></a>
 </header>
 
@@ -67,15 +72,15 @@
                   {% for product in b2 %}
                   <div class="col-12 col-sm-6 col-md-4 col-lg-4 col-xl-3 mb-4">
                       <div class="card h-100">
-                          <a href="/a1?view={{product.id}}">
+                          <a href="/b2?view={{product.id}}">
                               <div class="card-img-top"
                                    style="background: url('static/image/product/{{product.category}}/{{product.picture}}'); background-repeat:no-repeat; background-size: cover; height:200px;width:100% "></div>
                           </a>
                           <div class="card-body">
                               <h5 class="card-title">
-                                  <a href="/tshirt?view={{product.id}}">{{ product.pName}}</a>
+                                  <a href="/b2?view={{product.id}}">{{ product.pName}}</a>
                               </h5>
-                              <h4>৳{{product.price}}</h4>
+                              <h4>{{product.price}}</h4>
                           </div>
                           <div class="card-footer">
                               <small class="text-muted"></small>

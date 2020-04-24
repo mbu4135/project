@@ -49,20 +49,16 @@
                               <table class="table table-bordered table-hover table-striped">
                                   <thead>
                                   <tr>
-                                      <th>Id</th>
-                                      <th>Id</th>
-                                      <th>pName</th>
-                                      <th>price</th>
-                                      <th>quantity</th>
-                                      <th>total_price</th>
-                                      <th>delete</th>
+                                      <th>상품 이름</th>
+                                      <th>가격</th>
+                                      <th>수량</th>
+                                      <th>가격</th>
+                                      <th>삭제</th>
                                   </tr>
                                   </thead>
                                   <tbody>
                                   {% for product in row1 %}
                                   <tr>
-                                      <td>{{product.id}}</td>
-                                      <td>{{product.pid}}</td>
                                       <td>{{product.pName}}</td>
                                       <td>{{product.price}}</td>
                                       <td>{{product.quantity}}</td>
@@ -76,8 +72,6 @@
                                   {% endfor%}
                                   {% for product in row2 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -91,8 +85,6 @@
                                   {% endfor%}
                                   {% for product in row3 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -106,8 +98,6 @@
                                   {% endfor%}
                                   {% for product in row4 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -121,8 +111,6 @@
                                   {% endfor%}
                                   {% for product in row5 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -136,8 +124,6 @@
                                   {% endfor%}
                                   {% for product in row6 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -151,8 +137,6 @@
                                   {% endfor%}
                                   {% for product in row7 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -166,8 +150,6 @@
                                   {% endfor%}
                                   {% for product in row8 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -181,8 +163,6 @@
                                   {% endfor%}
                                   {% for product in row9 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -196,8 +176,6 @@
                                   {% endfor%}
                                   {% for product in row10 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
@@ -211,14 +189,142 @@
                                   {% endfor%}
                                   {% for product in row11 %}
                                   <tr>
-                                    <td>{{product.id}}</td>
-                                    <td>{{product.pid}}</td>
                                     <td>{{product.pName}}</td>
                                     <td>{{product.price}}</td>
                                     <td>{{product.quantity}}</td>
                                     <td>{{product.total_price}}</td>
                                       <td><form action="/carts" method="post">
                                         <input type="hidden" name="num" value="11">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row12 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="12">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row13 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="13">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row14 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="14">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row15 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="15">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row16 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="16">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row17 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="17">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row18 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="18">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row19 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="19">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row20 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="20">
+                                        <input type="hidden" name="icebox" value="0">
+                                        <input type="submit" class="btn btn-primary" name="delete" value="삭제">
+                                      </form></td>
+                                  </tr>
+                                  {% endfor%}
+                                  {% for product in row21 %}
+                                  <tr>
+                                    <td>{{product.pName}}</td>
+                                    <td>{{product.price}}</td>
+                                    <td>{{product.quantity}}</td>
+                                    <td>{{product.total_price}}</td>
+                                      <td><form action="/carts" method="post">
+                                        <input type="hidden" name="num" value="21">
                                         <input type="hidden" name="icebox" value="0">
                                         <input type="submit" class="btn btn-primary" name="delete" value="삭제">
                                       </form></td>
