@@ -2,7 +2,7 @@
 
 {% block body %}
 <div class="jumbotron">
-    <h2 style="text-align: center; color: #206aaa;">Sign Up Form</h2>
+    <h2 style="text-align: center; color: #206aaa;">회원가입</h2>
     {% from "includes/_formhelpers.html" import render_field %}
     <form method="POST" action="/register">
         <div class="form-group">
@@ -25,7 +25,7 @@
           {{render_field(form.rmobile3)}}
         </div>
         <p>
-            <input type="submit" class="btn btn-primary" value="Sign Up">
+            <input type="submit" class="btn btn-primary" value="가입하기">
         </p>
     </form>
 </div>

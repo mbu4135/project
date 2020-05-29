@@ -46,8 +46,7 @@
             <a href="/c1" class="w3-bar-item w3-button">유제품/유지류</a>
             <a href="/d1" class="w3-bar-item w3-button">견과류/과일/쌀</a>
             <a href="/e1" class="w3-bar-item w3-button">초콜릿/코코아분말</a>
-            <a href="/f1" class="w3-bar-item w3-button">앙금/떡</a>
-            <a href="/g1" class="w3-bar-item w3-button">포장재료</a>
+            <a href="/f1" class="w3-bar-item w3-button">포장재료</a>
           </div>
           <a href="/mypage" class="w3-bar-item w3-button w3-padding"><p> 마이페이지</p></a>
           <a href="01030655770" class="w3-bar-item w3-button w3-padding"><p><i class="fa fa-fw fa-phone"></i> 010-3065-5770</p></a>
@@ -56,7 +55,7 @@
 
         <!-- Top menu on small screens -->
         <header class="w3-bar w3-top w3-hide-large w3-black w3-xlarge">
-          <div class="w3-bar-item w3-padding-24 w3-wide">대두 G&S</div>
+          <a href="/"><div class="w3-bar-item w3-padding-24 w3-wide">베이커리24</div></a>
           <a href="javascript:void(0)" class="w3-bar-item w3-button w3-padding-24 w3-right" onclick="w3_open()"><i class="fa fa-bars"></i></a>
         </header>
 
@@ -71,7 +70,7 @@
 
           <!-- Top header -->
           <header class="w3-container w3-xlarge">
-            <p class="w3-left">신속 정확한 당일배송</p>
+            <p class="w3-left">인터넷 최저가 당일배송</p>
             <p class="w3-right">
               {% if session.logged_in %}
               <span style="font-size:16px"><a href="/logout" style="text-decoration:none;">로그아웃</a></span>
@@ -86,6 +85,45 @@
     {% block body %}
 
     {% endblock %}
+    <!-- Subscribe section -->
+    <div class="w3-container w3-white w3-padding-32 w3-row">
+    <div class="w3-container w3-col m9">
+      <ul>
+        <li>고객센터 [<a href="/help">FAQ</a>   <a href="/help">1:1질문하기</a>   <a href="/help">이메일문의</a>]</li>
+        <li>대표전화 <a href="tel:01030655770">010-3065-5770</a></li>
+        <li>오전9시-오후6시(토,일, 공휴일 휴무)</li>
+      </ul>
+      <p style="color:gray">업체명 : 베이커리24 | 경기도 고양시 덕양구 도내동 595-7 | 사업자등록번호 : 505-38-94030 | 대표 : 민병운 (mbu4135@gmail.com) | 호스팅사업자 : pythonanywhere </p>
+    </div>
+    <div class="w3-container w3-col m3">
+      <!-- KB에스크로 이체 인증마크 적용 시작 -->
+  <script>
+  function onPopKBAuthMark()
+  {
+  window.open('','KB_AUTHMARK','height=604, width=648, status=yes, toolbar=no, menubar=no,
+   location=no');
+  document.KB_AUTHMARK_FORM.action='http://escrow1.kbstar.com/quics';
+  document.KB_AUTHMARK_FORM.target='KB_AUTHMARK';
+  document.KB_AUTHMARK_FORM.submit();
+  }
+  </script>
+  <form name="KB_AUTHMARK_FORM" method="get">
+  <input type="hidden" name="page" value="B009111"/>
+  <input type="hidden" name="cc" value="b010807:b008491"/>
+  <input type="hidden" name="mHValue" value='5a39298d9d0c2cf00188af36509bede5202005251633587'/>
+  </form>
+  <a href="#" onclick="javascript:onPopKBAuthMark();return false;">
+  <img src="http://img1.kbstar.com/img/escrow/escrowcmark.gif" border="0"/>
+  </a>
+  <!-- KB에스크로 이체 인증마크 적용 종료 -->
+    </div>
+    </div>
+
+    <!-- Footer -->
+
+    <div class="w3-black w3-center w3-padding-24">베이커리24</div>
+
+    <!-- End page content -->
     <script>
     // Accordion
     function myAccFunc() {

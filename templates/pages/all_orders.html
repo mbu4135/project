@@ -123,6 +123,7 @@
                                         <th>rnumber</th>
                                         <th>addnum</th>
                                         <th>oplace</th>
+                                        <th>주문일자</th>
                                         <th>memo</th>
                                         <th>배송 상태</th>
                                         <th>확인</th>
@@ -132,7 +133,7 @@
                                     <tbody>
                                     <tr>
                                       <form action="/orders" method="post">
-                                        <td>{{product.username}}<input type="text" name="id" value="{{product.id}}"><input type="text" name="condi" value="배송중"></td>
+                                        <td><p>{{product.username}}</p><input type="text" name="id" value="{{product.id}}"><input type="text" name="condi" value="배송중"></td>
                                         <td>{{product.pName}}</td>
                                         <td>{{product.price}}</td>
                                         <td>{{product.quantity}}</td>
@@ -140,6 +141,7 @@
                                         <td>{{product.rmobile1}}-{{product.rmobile2}}-{{product.rmobile3}}</td>
                                         <td>{{product.addnum}}</td>
                                         <td>{{product.oplace}}{{product.oplacee}}{{product.oplaced}}</td>
+                                        <td>{{product.odate}}</td>
                                         <td>{{product.memo}}</td>
                                         <td>{{product.condi}}</td>
                                         <td><input type="submit" value="배송중"></td>

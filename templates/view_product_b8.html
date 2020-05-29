@@ -1,0 +1,114 @@
+{% extends 'layout.html' %}
+
+{% block title %} home {% endblock %}
+
+{% block body %}
+
+{% for product in b8 %}
+<!-- !PAGE CONTENT! -->
+<div class="w3-main w3-white" style="margin-left:20px">
+
+  <!-- Push down content on small screens -->
+  <div class="w3-hide-large" style="margin-top:10px"></div>
+  <div class="w3-container w3-row" style="margin-top:12px">
+    <div class="w3-row w3-col m7 l7">
+      <div class="w3-col m11 l11">
+        <img src="static/image/products/{{product.category}}/{{product.picture}}" style="height:500px;width:100%;margin-bottom:-6px">
+      </div>
+      <div class="w3-col m1 l1">
+
+      </div>
+    </div>
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form method="POST" action="/{{product.category}}?order={{product.id}}">
+    <input type="hidden" name="price" style="width:50%" value="{{ product.price}}">
+    <input type="hidden" name="pName" value="{{ product.pName}}"><br>
+      <div class="w3-col m5 l5">
+        <div style="border:3px solid #666666; border-style: solid none solid none;">
+          <div style="margin-left:20px; margin-bottom:20px; margin-top:30px;">
+            <h1 style="font-size:19px;">{{ product.pName}}</h1>
+            <div style="border:1px solid #d9d9d9; border-style: solid none solid none;" class="w3-row">
+              <div class="w3-col s4 m4 l4" style="margin-top:15px;margin-bottom:8px;">
+                <p>판매가격 </p>
+              </div>
+              <div class="w3-col s8 m8 l8" style="margin-top:15px;margin-bottom:8px;">
+                <p>{{ product.price}} </p>
+              </div>
+            </div>
+            <div style="border:1px solid #d9d9d9; border-style: none none solid none;" class="w3-row">
+              <div class="w3-col s4 m4 l4" style="margin-top:15px;margin-bottom:8px;">
+                <p>아이스박스 포장 </p>
+              </div>
+              <div class="w3-col s8 m8 l8" style="margin-top:15px;margin-bottom:8px;">
+                <p>{{ product.info1}} </p>
+              </div>
+            </div>
+            <div style="border:1px solid #d9d9d9; border-style: none none solid none;" class="w3-row">
+              <div class="w3-col s4 m4 l4" style="margin-top:15px;margin-bottom:8px;">
+                <p>보관 방법 </p>
+              </div>
+              <div class="w3-col s8 m8 l8" style="margin-top:15px;margin-bottom:8px;">
+                <p>{{ product.info2}} </p>
+              </div>
+            </div>
+            <div style="border:1px solid #d9d9d9; border-style: none none solid none;" class="w3-row">
+              <div class="w3-col s4 m4 l4" style="margin-top:15px;margin-bottom:8px;">
+                <p>수량 선택 </p>
+              </div>
+              <div class="w3-col s8 m8 l8" style="margin-top:15px;margin-bottom:8px;">
+                <p><input type="number" id="quantity" name="quantity" min="1" value="1"> </p>
+              </div>
+            </div>
+            <div style="border:1px solid #d9d9d9; border-style: none none solid none; background-color: #f2f2f2;" class="w3-row">
+              <div class="w3-col s4 m4 l4" style="margin-top:15px;margin-bottom:8px;">
+                <label for="iceb">옵션 선택:</label>
+              </div>
+              <div class="w3-col s8 m8 l8" style="margin-top:15px;margin-bottom:8px;">
+                <p>
+                  <select id="iceb" name="iceb">
+                    <option value="0">선택 안함</option>
+                    <option value="1">아이스박스 구매(+2000원)</option>
+                  </select>
+                </p>
+              </div>
+            </div>
+            <div class="w3-row" style="margin-top:20px;">
+              <button type="submit" class="w3-button w3-black w3-xlarge">장바구니 담기</button>
+            </div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <hr>
+      <div class="w3-container">
+        <br><br><br><br>
+      </div>
+      <div class="w3-container">
+        {% if product.info3 %}
+        <img src="static/image/products/{{product.category}}/2/{{ product.picture}}" style="width:100%;margin-bottom:-6px">
+        {% else %}
+        {% endif %}
+        <br>
+        <br>
+        {% if product.info4 %}
+        <img src="static/image/products/{{product.category}}/3/{{product.picture}}" style="height:100%;width:100%;margin-bottom:-6px">
+        {% else %}
+        {% endif %}
+        <br><br>
+        {% if product.info5 %}
+        <img src="static/image/products/{{product.category}}/4/{{product.picture}}" style="height:100%;width:100%;margin-bottom:-6px">
+        {% else %}
+        {% endif %}
+        {% if product.info6 %}
+        <img src="static/image/products/{{product.category}}/5/{{product.picture}}" style="height:100%;width:100%;margin-bottom:-6px">
+        {% else %}
+        {% endif %}
+        <img src="static/images/delev.png" style="width:100%;margin-bottom:-6px;">
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
+<!-- End page content -->
+
+{% endblock %}

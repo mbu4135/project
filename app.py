@@ -75,40 +75,6 @@ def wrappers(func, *args, **kwargs):
 
     return wrapped
 
-def content_based_filtering(product_id):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id, pName, price, description, available, category, item, pCode, picture, date FROM products WHERE id=%s", (product_id,))  # getting id row
-    data = cur.fetchone()  # get row info
-    data_cat = data['category']  # get id category ex shirt
-    print('Showing result for Product Id: ' + product_id)
-    category_matched = cur.execute("SELECT * FROM products WHERE category=%s", (data_cat,))  # get all shirt category
-    print('Total product matched: ' + str(category_matched))
-    cat_product = cur.fetchall()  # get all row
-    cur.execute("SELECT * FROM product_level WHERE product_id=%s", (product_id,))  # id level info
-    id_level = cur.fetchone()
-    recommend_id = []
-    cate_level = ['v_shape', 'polo', 'clean_text', 'design', 'leather', 'color', 'formal', 'converse', 'loafer', 'hook',
-                  'chain']
-    for product_f in cat_product:
-        cur.execute("SELECT * FROM product_level WHERE product_id=%s", (product_f['id'],))
-        f_level = cur.fetchone()
-        match_score = 0
-        if f_level['product_id'] != int(product_id):
-            for cat_level in cate_level:
-                if f_level[cat_level] == id_level[cat_level]:
-                    match_score += 1
-            if match_score == 11:
-                recommend_id.append(f_level['product_id'])
-    print('Total recommendation found: ' + str(recommend_id))
-    if recommend_id:
-        cur = mysql.connection.cursor()
-        placeholders = ','.join((str(n) for n in recommend_id))
-        query = 'SELECT * FROM products WHERE id IN (%s)' % placeholders
-        cur.execute(query)
-        recommend_list = cur.fetchall()
-        return recommend_list, recommend_id, category_matched, product_id
-    else:
-        return ''
 
 @app.route('/')
 def home():
@@ -117,55 +83,111 @@ def home():
 
 class LoginForm(Form):  # Create Login Form
     email = EmailField('', [validators.DataRequired(), validators.Email(), validators.length(min=4, max=25)],
-                       render_kw={'placeholder': 'Email'})
+                       render_kw={'placeholder': '이메일'})
     password = PasswordField('', [validators.length(min=3)],
-                             render_kw={'placeholder': 'Password'})
+                             render_kw={'placeholder': '비밀번호'})
+
 
 # User Login
 @app.route('/login', methods=['GET', 'POST'])
 @not_logged_in
 def login():
     form = LoginForm(request.form)
-    if request.method == 'POST' and form.validate():
-        # GEt user form
-        email = form.email.data
-        # password_candidate = request.form['password']
-        password_candidate = form.password.data
-
+    if 'uid' in session:
         # Create cursor
         cur = mysql.connection.cursor()
+        uid = session['uid']
+        s_name = session['s_name']
+        x = '0'
+        cur.execute("UPDATE users SET online=%s WHERE id=%s", (x, uid))
+        session.pop('logged_in',None)
+        session.pop('uid', None)
+        session.pop('s_name', None)
+        if request.method == 'POST' and form.validate():
+            # GEt user form
+            email = form.email.data
+            # password_candidate = request.form['password']
+            password_candidate = form.password.data
 
-        # Get user by username
-        result = cur.execute("SELECT * FROM users WHERE email=%s", [email])
+            # Create cursor
+            cur = mysql.connection.cursor()
 
-        if result > 0:
-            # Get stored value
-            data = cur.fetchone()
-            password = data['password']
-            uid = data['id']
-            name = data['username']
+            # Get user by username
+            result = cur.execute("SELECT * FROM users WHERE email=%s", [email])
 
-            # Compare password
-            if sha256_crypt.verify(password_candidate, password):
-                # passed
-                session['logged_in'] = True
-                session['uid'] = uid
-                session['s_name'] = name
-                x = '1'
-                cur.execute("UPDATE users SET online=%s WHERE id=%s", (x, uid))
+            if result > 0:
+                # Get stored value
+                data = cur.fetchone()
+                password = data['password']
+                uid = data['id']
+                name = data['username']
 
-                return redirect(url_for('home'))
+                # Compare password
+                if sha256_crypt.verify(password_candidate, password):
+                    # passed
+                    session['logged_in'] = True
+                    session['uid'] = uid
+                    session['s_name'] = name
+                    x = '1'
+                    cur.execute("UPDATE users SET online=%s WHERE id=%s", (x, uid))
+                    cur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,name,name,))
+                    cur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,name,name,name,))
+
+                    return redirect(url_for('home'))
+
+                else:
+                    flash('Incorrect password', 'danger')
+                    return render_template('login.html', form=form)
 
             else:
-                flash('Incorrect password', 'danger')
+                flash('Username not found', 'danger')
+                # Close connection
+                cur.close()
                 return render_template('login.html', form=form)
+        return render_template('login.html', form=form)
+    else:
+        if request.method == 'POST' and form.validate():
+            # GEt user form
+            email = form.email.data
+            # password_candidate = request.form['password']
+            password_candidate = form.password.data
 
-        else:
-            flash('Username not found', 'danger')
-            # Close connection
-            cur.close()
-            return render_template('login.html', form=form)
-    return render_template('login.html', form=form)
+            # Create cursor
+            cur = mysql.connection.cursor()
+
+            # Get user by username
+            result = cur.execute("SELECT * FROM users WHERE email=%s", [email])
+
+            if result > 0:
+                # Get stored value
+                data = cur.fetchone()
+                password = data['password']
+                uid = data['id']
+                name = data['username']
+
+                # Compare password
+                if sha256_crypt.verify(password_candidate, password):
+                    # passed
+                    session['logged_in'] = True
+                    session['uid'] = uid
+                    session['s_name'] = name
+                    x = '1'
+                    cur.execute("UPDATE users SET online=%s WHERE id=%s", (x, uid))
+                    cur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,name,name,))
+                    cur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,name,name,name,))
+
+                    return redirect(url_for('home'))
+
+                else:
+                    flash('Incorrect password', 'danger')
+                    return render_template('login.html', form=form)
+
+            else:
+                flash('Username not found', 'danger')
+                # Close connection
+                cur.close()
+                return render_template('login.html', form=form)
+        return render_template('login.html', form=form)
 
 @app.route('/logout')
 def logout():
@@ -173,20 +195,23 @@ def logout():
         # Create cursor
         cur = mysql.connection.cursor()
         uid = session['uid']
+        s_name = session['s_name']
         x = '0'
         cur.execute("UPDATE users SET online=%s WHERE id=%s", (x, uid))
-        session.clear()
+        session.pop('logged_in',None)
+        session.pop('uid', None)
+        session.pop('s_name', None)
         flash('You are logged out', 'success')
         return redirect(url_for('home'))
     return redirect(url_for('login'))
 
 class RegisterForm(Form):
     username = StringField('', [validators.length(min=3, max=50)],
-                       render_kw={'autofocus': True, 'placeholder': 'Full Name'})
+                       render_kw={'autofocus': True, 'placeholder': '성함'})
     email = EmailField('', [validators.DataRequired(), validators.Email(), validators.length(min=4, max=25)],
-                       render_kw={'placeholder': 'Email'})
+                       render_kw={'placeholder': '이메일'})
     password = PasswordField('', [validators.length(min=3)],
-                             render_kw={'placeholder': 'Password'})
+                             render_kw={'placeholder': '비밀번호'})
     rmobile1 = StringField('', [validators.length(min=3, max=3)],
                        render_kw={'autofocus': True})
     rmobile2 = StringField('', [validators.length(min=3, max=4)],
@@ -213,6 +238,23 @@ def register():
                     (username, email, password, rmobile1, rmobile2, rmobile3,))
         cur.execute("INSERT INTO buy_product2(ofname, username, rmobile1, rmobile2, rmobile3) VALUES(%s, %s, %s, %s, %s)",
                     (username, username, rmobile1, rmobile2, rmobile3,))
+
+        mysql.connection.commit()
+        cur.close()
+        cur = mysql.connection.cursor()
+        result = cur.execute("SELECT * FROM users WHERE email=%s", [email])
+
+        if result > 0:
+            # Get stored value
+            data = cur.fetchone()
+            password = data['password']
+            uid = data['id']
+            name = data['username']
+            session['logged_in'] = True
+            session['uid'] = uid
+            session['s_name'] = name
+            x = '1'
+            cur.execute("UPDATE users SET online=%s WHERE id=%s", (x, uid))
 
         # Commit cursor
         mysql.connection.commit()
@@ -242,9 +284,10 @@ def help():
     email = form.email.data
     title = form.title.data
     contents = form.contents.data
+    uid = session['uid']
     if request.method == 'POST':
         cur = mysql.connection.cursor()
-        cur.execute('INSERT INTO help(selec,name,phone,email,title,contents) VALUES (%s,%s,%s,%s,%s,%s)', (selec,name,phone,email,title,contents,))
+        cur.execute('INSERT INTO help(uid,selec,name,phone,email,title,contents) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,selec,name,phone,email,title,contents,))
         mysql.connection.commit()
         cur.close()
         return redirect(url_for('home'))
@@ -519,15 +562,15 @@ def buy_product():
         curs.execute('SELECT * FROM users WHERE id=%s', (uid,))
         recipient = curs.fetchall()
         curs.close()
-        if request.method == 'POST' and form.validate():
+        if request.method == 'POST':
             curso = mysql.connection.cursor()
             curso.execute('ALTER TABLE uorders DROP id')
             curso.execute('ALTER TABLE buy_product1 DROP id')
             curso.execute('INSERT buy_product1 SELECT uid,ofname,pid,quantity,dstatus,odate,ddate,pName,price,condi,(price*quantity) AS total_price FROM uorders')
             curso.execute('ALTER TABLE buy_product1 ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY')
             curso.execute('UPDATE users SET uid=%s,rmobile1=%s,rmobile2=%s,rmobile3=%s,addnum=%s,oplace=%s, oplacee=%s, oplaced=%s, memo=%s WHERE id=%s', (uid,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo,uid,))
-            curso.execute('UPDATE buy_product2 SET uid=%s,rmobile1=%s,rmobile2=%s,rmobile3=%s,addnum=%s,oplace=%s, oplacee=%s, oplaced=%s, memo=%s WHERE uid=%s', (uid,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo,uid,))
-            curso.execute('CREATE OR REPLACE VIEW all_orders AS SELECT id,ofname,username,pid,quantity,dstatus,odate,ddate,pName,price,total_price,condi,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo FROM buy_product1 INNER JOIN buy_product2 USING (ofname)')
+            curso.execute('UPDATE buy_product2 SET uid=%s,username=%s,rmobile1=%s,rmobile2=%s,rmobile3=%s,addnum=%s,oplace=%s, oplacee=%s, oplaced=%s, memo=%s WHERE uid=%s', (uid,username,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo,uid,))
+            curso.execute('CREATE OR REPLACE VIEW all_orders AS SELECT id,uid,username,pid,quantity,dstatus,odate,ddate,pName,price,total_price,condi,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo FROM buy_product1 INNER JOIN buy_product2 USING (uid)')
             curso.execute('DELETE FROM orders WHERE uid=%s', (uid,))
             curso.execute('DELETE FROM uorders WHERE uid=%s', (uid,))
             mysql.connection.commit()
@@ -535,40 +578,7 @@ def buy_product():
             return redirect(url_for('mypage'))
         return render_template('buy_product.html', form=form, product=product, recipient=recipient, total=total)
     else:
-        if 'ofname' in session:
-            username = form.username.data
-            rmobile1 = form.rmobile1.data
-            rmobile2 = form.rmobile2.data
-            rmobile3 = form.rmobile3.data
-            addnum = form.addnum.data
-            oplace = form.oplace.data
-            oplacee = form.oplacee.data
-            oplaced = form.oplaced.data
-            memo = form.memo.data
-            ofname = session['ofname']
-            cur = mysql.connection.cursor()
-            cur.execute('SELECT id,pid,pName,price,quantity,ofname,condi,(price*quantity) AS total_price FROM uorders WHERE ofname=%s', (ofname,))
-            product = cur.fetchall()
-            cur.execute('SELECT SUM(price*quantity) AS total_price FROM uorders WHERE ofname=%s', (ofname,))
-            total = cur.fetchall()
-            cur.close()
-            if request.method == 'POST':
-                curso = mysql.connection.cursor()
-                curso.execute('ALTER TABLE uorders DROP id')
-                curso.execute('ALTER TABLE buy_product1 DROP id')
-                curso.execute('INSERT buy_product1 SELECT uid,ofname,pid,quantity,dstatus,odate,ddate,pName,price,condi,(price*quantity) AS total_price FROM uorders')
-                curso.execute('ALTER TABLE buy_product1 ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY')
-                curso.execute('INSERT INTO buy_product2 (ofname,username,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (ofname,ofname,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo,))
-                curso.execute('DELETE FROM buy_product2 WHERE ofname=%s', (ofname,))
-                curso.execute('INSERT INTO buy_product2 (ofname,username,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (ofname,ofname,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo,))
-                curso.execute('CREATE OR REPLACE VIEW all_orders AS SELECT id,ofname,username,pid,quantity,dstatus,odate,ddate,pName,price,total_price,condi,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo FROM buy_product1 INNER JOIN buy_product2 USING (ofname)')
-                curso.execute('DELETE FROM orders WHERE ofname=%s', (ofname,))
-                curso.execute('DELETE FROM uorders WHERE ofname=%s', (ofname,))
-                mysql.connection.commit()
-                curso.close()
-                return redirect(url_for('mypage'))
-            return render_template('buy_product.html', form=form, product=product, total=total)
-        return render_template('buy_product.html')
+        return render_template('carts.html')
 
 class MessageForm(Form):  # Create Message Form
     body = StringField('', [validators.length(min=1)], render_kw={'autofocus': True})
@@ -631,6 +641,7 @@ class OrderForm(Form):  # Create Order Form
                        render_kw={'autofocus': True, 'placeholder': '수량'})
     price = HiddenField('', [validators.length(min=0), validators.DataRequired()])
     pName = HiddenField('', [validators.length(min=0), validators.DataRequired()])
+    iceb = SelectField('', [validators.required(), validators.length(max=10)])
 
 @app.route('/a1', methods=['GET', 'POST'])
 def a1():
@@ -643,10 +654,11 @@ def a1():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -656,12 +668,11 @@ def a1():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -675,9 +686,6 @@ def a1():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -693,14 +701,32 @@ def a1():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a1.html', x=x, a1=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a1.html', a1=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a1.html', x=x, a1=product, form=form)
+        return render_template('order_product_a1.html', a1=product, form=form)
     return render_template('a1.html', a1=products, form=form)
 
 @app.route('/a2', methods=['GET', 'POST'])
@@ -714,10 +740,11 @@ def a2():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -727,12 +754,11 @@ def a2():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -746,9 +772,6 @@ def a2():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -764,14 +787,32 @@ def a2():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a2.html', x=x, a2=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a2.html', a2=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a2.html', x=x, a2=product, form=form)
+        return render_template('order_product_a2.html', a2=product, form=form)
     return render_template('a2.html', a2=products, form=form)
 
 @app.route('/a3', methods=['GET', 'POST'])
@@ -785,10 +826,11 @@ def a3():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -798,12 +840,11 @@ def a3():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -817,9 +858,6 @@ def a3():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -835,14 +873,32 @@ def a3():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a3.html', x=x, a3=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a3.html', a3=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a3.html', x=x, a3=product, form=form)
+        return render_template('order_product_a3.html', a3=product, form=form)
     return render_template('a3.html', a3=products, form=form)
 
 @app.route('/a4', methods=['GET', 'POST'])
@@ -856,10 +912,11 @@ def a4():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -869,12 +926,11 @@ def a4():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -888,9 +944,6 @@ def a4():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -906,14 +959,32 @@ def a4():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a4.html', x=x, a4=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a4.html', a4=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a4.html', x=x, a4=product, form=form)
+        return render_template('order_product_a4.html', a4=product, form=form)
     return render_template('a4.html', a4=products, form=form)
 
 @app.route('/a5', methods=['GET', 'POST'])
@@ -927,10 +998,11 @@ def a5():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -940,12 +1012,11 @@ def a5():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -959,9 +1030,6 @@ def a5():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -977,14 +1045,32 @@ def a5():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a5.html', x=x, a5=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a5.html', a5=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a5.html', x=x, a5=product, form=form)
+        return render_template('order_product_a5.html', a5=product, form=form)
     return render_template('a5.html', a5=products, form=form)
 
 @app.route('/a6', methods=['GET', 'POST'])
@@ -998,10 +1084,11 @@ def a6():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1011,12 +1098,11 @@ def a6():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1030,9 +1116,6 @@ def a6():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1048,14 +1131,32 @@ def a6():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a6.html', x=x, a6=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a6.html', a6=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a6.html', x=x, a6=product, form=form)
+        return render_template('order_product_a6.html', a6=product, form=form)
     return render_template('a6.html', a6=products, form=form)
 
 @app.route('/a7', methods=['GET', 'POST'])
@@ -1069,10 +1170,11 @@ def a7():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1082,12 +1184,11 @@ def a7():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1101,9 +1202,6 @@ def a7():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1119,14 +1217,32 @@ def a7():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_a7.html', x=x, a7=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_a7.html', a7=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_a7.html', x=x, a7=product, form=form)
+        return render_template('order_product_a7.html', a7=product, form=form)
     return render_template('a7.html', a7=products, form=form)
 
 @app.route('/b1', methods=['GET', 'POST'])
@@ -1140,10 +1256,11 @@ def b1():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1153,12 +1270,11 @@ def b1():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1172,9 +1288,6 @@ def b1():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1190,14 +1303,32 @@ def b1():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b1.html', x=x, b1=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b1.html', b1=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b1.html', x=x, b1=product, form=form)
+        return render_template('order_product_b1.html', b1=product, form=form)
     return render_template('b1.html', b1=products, form=form)
 
 @app.route('/b2', methods=['GET', 'POST'])
@@ -1211,10 +1342,11 @@ def b2():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1224,12 +1356,11 @@ def b2():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1243,9 +1374,6 @@ def b2():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1261,14 +1389,32 @@ def b2():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b2.html', x=x, b2=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b2.html', b2=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b2.html', x=x, b2=product, form=form)
+        return render_template('order_product_b2.html', b2=product, form=form)
     return render_template('b2.html', b2=products, form=form)
 
 @app.route('/b3', methods=['GET', 'POST'])
@@ -1282,10 +1428,11 @@ def b3():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1295,12 +1442,11 @@ def b3():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1314,9 +1460,6 @@ def b3():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1332,14 +1475,32 @@ def b3():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b3.html', x=x, b3=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b3.html', b3=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b3.html', x=x, b3=product, form=form)
+        return render_template('order_product_b3.html', b3=product, form=form)
     return render_template('b3.html', b3=products, form=form)
 
 @app.route('/b4', methods=['GET', 'POST'])
@@ -1353,10 +1514,11 @@ def b4():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1366,12 +1528,11 @@ def b4():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1385,9 +1546,6 @@ def b4():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1403,15 +1561,34 @@ def b4():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b4.html', x=x, b4=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b4.html', b4=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b4.html', x=x, b4=product, form=form)
+        return render_template('order_product_b4.html', b4=product, form=form)
     return render_template('b4.html', b4=products, form=form)
+
 @app.route('/b5', methods=['GET', 'POST'])
 def b5():
     form = OrderForm(request.form)
@@ -1423,10 +1600,11 @@ def b5():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1436,12 +1614,11 @@ def b5():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1455,9 +1632,6 @@ def b5():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1473,15 +1647,34 @@ def b5():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b5.html', x=x, b5=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b5.html', b5=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b5.html', x=x, b5=product, form=form)
+        return render_template('order_product_b5.html', b5=product, form=form)
     return render_template('b5.html', b5=products, form=form)
+
 @app.route('/b6', methods=['GET', 'POST'])
 def b6():
     form = OrderForm(request.form)
@@ -1493,10 +1686,11 @@ def b6():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1506,12 +1700,11 @@ def b6():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1525,9 +1718,6 @@ def b6():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1543,15 +1733,34 @@ def b6():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b6.html', x=x, b6=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b6.html', b6=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b6.html', x=x, b6=product, form=form)
+        return render_template('order_product_b6.html', b6=product, form=form)
     return render_template('b6.html', b6=products, form=form)
+
 @app.route('/b7', methods=['GET', 'POST'])
 def b7():
     form = OrderForm(request.form)
@@ -1563,10 +1772,11 @@ def b7():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1576,12 +1786,11 @@ def b7():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1595,9 +1804,6 @@ def b7():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1613,15 +1819,119 @@ def b7():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_b7.html', x=x, b7=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b7.html', b7=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_b7.html', x=x, b7=product, form=form)
+        return render_template('order_product_b7.html', b7=product, form=form)
     return render_template('b7.html', b7=products, form=form)
+
+@app.route('/b8', methods=['GET', 'POST'])
+def b8():
+    form = OrderForm(request.form)
+    # Create cursor
+    cur = mysql.connection.cursor()
+    # Get message
+    values = 'b8'
+    cur.execute("SELECT * FROM products WHERE category=%s ORDER BY id ASC", (values,))
+    products = cur.fetchall()
+    # Close Connection
+    cur.close()
+    if request.method == 'POST':
+        quantity = form.quantity.data
+        price = form.price.data
+        pName = form.pName.data
+        iceb = form.iceb.data
+        pid = request.args['order']
+        now = datetime.datetime.now()
+        week = datetime.timedelta(days=7)
+        delivery_date = now + week
+        now_time = delivery_date.strftime("%y-%m-%d %H:%M:%S")
+        # Create Cursor
+        curs = mysql.connection.cursor()
+        if 'uid' in session:
+            uid = session['uid']
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
+        # Commit cursor
+        mysql.connection.commit()
+
+        # Close Connection
+        cur.close()
+
+        flash('Order successful', 'success')
+        return render_template('b8.html', b8=products, form=form)
+    if 'view' in request.args:
+        product_id = request.args['view']
+        curso = mysql.connection.cursor()
+        curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
+        product = curso.fetchall()
+        # print('Execution time: ' + str(execution_time) + ' usec')
+        if 'uid' in session:
+            uid = session['uid']
+            # Create cursor
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT * FROM product_view WHERE user_id=%s AND product_id=%s", (uid, product_id))
+            result = cur.fetchall()
+            if result:
+                now = datetime.datetime.now()
+                now_time = now.strftime("%y-%m-%d %H:%M:%S")
+                cur.execute("UPDATE product_view SET date=%s WHERE user_id=%s AND product_id=%s",
+                            (now_time, uid, product_id))
+            else:
+                cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
+                mysql.connection.commit()
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_b8.html', b8=product, form=form)
+    elif 'order' in request.args:
+        product_id = request.args['order']
+        curso = mysql.connection.cursor()
+        curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
+        product = curso.fetchall()
+        return render_template('order_product_b8.html', b8=product, form=form)
+    return render_template('b8.html', b8=products, form=form)
 
 @app.route('/c1', methods=['GET', 'POST'])
 def c1():
@@ -1634,10 +1944,11 @@ def c1():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1647,12 +1958,11 @@ def c1():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1666,9 +1976,6 @@ def c1():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1684,14 +1991,32 @@ def c1():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_c1.html', x=x, c1=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_c1.html', c1=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_c1.html', x=x, c1=product, form=form)
+        return render_template('order_product_c1.html', c1=product, form=form)
     return render_template('c1.html', c1=products, form=form)
 
 @app.route('/c2', methods=['GET', 'POST'])
@@ -1705,10 +2030,11 @@ def c2():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1718,12 +2044,11 @@ def c2():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1737,9 +2062,6 @@ def c2():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1755,14 +2077,32 @@ def c2():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_c2.html', x=x, c2=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_c2.html', c2=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_c2.html', x=x, c2=product, form=form)
+        return render_template('order_product_c2.html', c2=product, form=form)
     return render_template('c2.html', c2=products, form=form)
 
 @app.route('/c3', methods=['GET', 'POST'])
@@ -1776,10 +2116,11 @@ def c3():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1789,12 +2130,11 @@ def c3():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1808,9 +2148,6 @@ def c3():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1826,14 +2163,32 @@ def c3():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_c3.html', x=x, c3=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_c3.html', c3=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_c3.html', x=x, c3=product, form=form)
+        return render_template('order_product_c3.html', c3=product, form=form)
     return render_template('c3.html', c3=products, form=form)
 
 @app.route('/c4', methods=['GET', 'POST'])
@@ -1847,10 +2202,11 @@ def c4():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1860,12 +2216,11 @@ def c4():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1879,9 +2234,6 @@ def c4():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1897,15 +2249,34 @@ def c4():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_c4.html', x=x, c4=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_c4.html', c4=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_c4.html', x=x, c4=product, form=form)
+        return render_template('order_product_c4.html', c4=product, form=form)
     return render_template('c4.html', c4=products, form=form)
+
 @app.route('/c5', methods=['GET', 'POST'])
 def c5():
     form = OrderForm(request.form)
@@ -1917,10 +2288,11 @@ def c5():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -1930,12 +2302,11 @@ def c5():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -1949,9 +2320,6 @@ def c5():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -1967,14 +2335,32 @@ def c5():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_c5.html', x=x, c5=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_c5.html', c5=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_c5.html', x=x, c5=product, form=form)
+        return render_template('order_product_c5.html', c5=product, form=form)
     return render_template('c5.html', c5=products, form=form)
 
 @app.route('/d1', methods=['GET', 'POST'])
@@ -1988,10 +2374,11 @@ def d1():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2001,12 +2388,11 @@ def d1():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2020,9 +2406,6 @@ def d1():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2038,14 +2421,32 @@ def d1():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_d1.html', x=x, d1=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_d1.html', d1=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_d1.html', x=x, d1=product, form=form)
+        return render_template('order_product_d1.html', d1=product, form=form)
     return render_template('d1.html', d1=products, form=form)
 
 @app.route('/d2', methods=['GET', 'POST'])
@@ -2059,10 +2460,11 @@ def d2():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2072,12 +2474,11 @@ def d2():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2091,9 +2492,6 @@ def d2():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2109,15 +2507,34 @@ def d2():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_d2.html', x=x, d2=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_d2.html', d2=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_d2.html', x=x, d2=product, form=form)
+        return render_template('order_product_d2.html', d2=product, form=form)
     return render_template('d2.html', d2=products, form=form)
+
 @app.route('/d3', methods=['GET', 'POST'])
 def d3():
     form = OrderForm(request.form)
@@ -2129,10 +2546,11 @@ def d3():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2142,12 +2560,11 @@ def d3():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2161,9 +2578,6 @@ def d3():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2179,16 +2593,33 @@ def d3():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_d3.html', x=x, d3=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_d3.html', d3=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_d3.html', x=x, d3=product, form=form)
+        return render_template('order_product_d3.html', d3=product, form=form)
     return render_template('d3.html', d3=products, form=form)
-
 
 @app.route('/e1', methods=['GET', 'POST'])
 def e1():
@@ -2201,10 +2632,11 @@ def e1():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2214,12 +2646,11 @@ def e1():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2233,9 +2664,6 @@ def e1():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2251,14 +2679,32 @@ def e1():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_e1.html', x=x, e1=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_e1.html', e1=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_e1.html', x=x, e1=product, form=form)
+        return render_template('order_product_e1.html', e1=product, form=form)
     return render_template('e1.html', e1=products, form=form)
 
 @app.route('/e2', methods=['GET', 'POST'])
@@ -2272,10 +2718,11 @@ def e2():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2285,12 +2732,11 @@ def e2():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2304,9 +2750,6 @@ def e2():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2322,15 +2765,34 @@ def e2():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_e2.html', x=x, e2=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_e2.html', e2=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_e2.html', x=x, e2=product, form=form)
+        return render_template('order_product_e2.html', e2=product, form=form)
     return render_template('e2.html', e2=products, form=form)
+
 @app.route('/e3', methods=['GET', 'POST'])
 def e3():
     form = OrderForm(request.form)
@@ -2342,10 +2804,11 @@ def e3():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2355,12 +2818,11 @@ def e3():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2374,9 +2836,6 @@ def e3():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2392,15 +2851,34 @@ def e3():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_e3.html', x=x, e3=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_e3.html', e3=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_e3.html', x=x, e3=product, form=form)
+        return render_template('order_product_e3.html', e3=product, form=form)
     return render_template('e3.html', e3=products, form=form)
+
 @app.route('/e4', methods=['GET', 'POST'])
 def e4():
     form = OrderForm(request.form)
@@ -2412,10 +2890,11 @@ def e4():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2425,12 +2904,11 @@ def e4():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2444,9 +2922,6 @@ def e4():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2462,16 +2937,33 @@ def e4():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_e4.html', x=x, e4=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_e4.html', e4=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_e4.html', x=x, e4=product, form=form)
+        return render_template('order_product_e4.html', e4=product, form=form)
     return render_template('e4.html', e4=products, form=form)
-
 
 @app.route('/f1', methods=['GET', 'POST'])
 def f1():
@@ -2484,10 +2976,11 @@ def f1():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2497,12 +2990,11 @@ def f1():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2516,9 +3008,6 @@ def f1():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2534,14 +3023,32 @@ def f1():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_f1.html', x=x, f1=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_f1.html', f1=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_f1.html', x=x, f1=product, form=form)
+        return render_template('order_product_f1.html', f1=product, form=form)
     return render_template('f1.html', f1=products, form=form)
 
 @app.route('/f2', methods=['GET', 'POST'])
@@ -2555,10 +3062,11 @@ def f2():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2568,12 +3076,11 @@ def f2():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2587,9 +3094,6 @@ def f2():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2605,15 +3109,34 @@ def f2():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_f2.html', x=x, f2=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_f2.html', f2=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_f2.html', x=x, f2=product, form=form)
+        return render_template('order_product_f2.html', f2=product, form=form)
     return render_template('f2.html', f2=products, form=form)
+
 @app.route('/f3', methods=['GET', 'POST'])
 def f3():
     form = OrderForm(request.form)
@@ -2625,10 +3148,11 @@ def f3():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2638,12 +3162,11 @@ def f3():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2657,9 +3180,6 @@ def f3():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2675,15 +3195,34 @@ def f3():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_f3.html', x=x, f3=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_f3.html', f3=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_f3.html', x=x, f3=product, form=form)
+        return render_template('order_product_f3.html', f3=product, form=form)
     return render_template('f3.html', f3=products, form=form)
+
 @app.route('/f4', methods=['GET', 'POST'])
 def f4():
     form = OrderForm(request.form)
@@ -2695,10 +3234,11 @@ def f4():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2708,12 +3248,11 @@ def f4():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2727,9 +3266,6 @@ def f4():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2745,15 +3281,34 @@ def f4():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_f4.html', x=x, f4=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_f4.html', f4=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_f4.html', x=x, f4=product, form=form)
+        return render_template('order_product_f4.html', f4=product, form=form)
     return render_template('f4.html', f4=products, form=form)
+
 @app.route('/f5', methods=['GET', 'POST'])
 def f5():
     form = OrderForm(request.form)
@@ -2765,10 +3320,11 @@ def f5():
     products = cur.fetchall()
     # Close Connection
     cur.close()
-    if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
         quantity = form.quantity.data
         price = form.price.data
         pName = form.pName.data
+        iceb = form.iceb.data
         pid = request.args['order']
         now = datetime.datetime.now()
         week = datetime.timedelta(days=7)
@@ -2778,12 +3334,11 @@ def f5():
         curs = mysql.connection.cursor()
         if 'uid' in session:
             uid = session['uid']
-            ofname = session['s_name']
-            curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
-        else:
-            ofname = request.form['ofname']
-            curs.execute("INSERT INTO orders(pid, ofname, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s)", (pid, ofname, quantity, now_time, price, pName,))
-            session['ofname'] = ofname
+            if 's_name' in session:
+                ofname = session['s_name']
+                curs.execute("INSERT INTO orders(uid, ofname, pid, quantity, ddate, price, pName) VALUES(%s, %s, %s, %s, %s, %s, %s)", (uid, ofname, pid, quantity, now_time, price, pName,))
+                if iceb == '1':
+                    curs.execute('INSERT INTO orders (uid,ofname,pid,quantity,pName,price,condi) VALUES (%s,%s,%s,%s,%s,%s,%s)', (uid,ofname,16,1,'icebox',1500,'배송준비',))\
         # Commit cursor
         mysql.connection.commit()
 
@@ -2797,9 +3352,6 @@ def f5():
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        wrappered = wrappers(content_based_filtering, product_id)
-        execution_time = timeit.timeit(wrappered, number=0)
         # print('Execution time: ' + str(execution_time) + ' usec')
         if 'uid' in session:
             uid = session['uid']
@@ -2815,14 +3367,32 @@ def f5():
             else:
                 cur.execute("INSERT INTO product_view(user_id, product_id) VALUES(%s, %s)", (uid, product_id))
                 mysql.connection.commit()
-        return render_template('view_product_f5.html', x=x, f5=product, form=form)
+        else:
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO users(username) VALUES(%s)",
+                        ('notmember',))
+            cur.execute("INSERT INTO buy_product2(ofname, username) VALUES(%s, %s)",
+                        ('notmember', 'notmember',))
+            mysql.connection.commit()
+            cur.close()
+            mycur = mysql.connection.cursor()
+            mycur.execute("SELECT * FROM users WHERE username=%s", ('notmember',))
+            # Get stored value
+            data = mycur.fetchone()
+            uid = data['id']
+            username = ''
+            session['uid'] = uid
+            session['s_name'] = ''
+            mycur.execute('UPDATE users SET uid=%s,username=%s WHERE username=%s', (uid,username,'notmember',))
+            mycur.execute('UPDATE buy_product2 SET uid=%s,ofname=%s,username=%s WHERE username=%s', (uid,username,username,'notmember',))
+            mysql.connection.commit()
+        return render_template('view_product_f5.html', f5=product, form=form)
     elif 'order' in request.args:
         product_id = request.args['order']
         curso = mysql.connection.cursor()
         curso.execute("SELECT * FROM products WHERE id=%s", (product_id,))
         product = curso.fetchall()
-        x = content_based_filtering(product_id)
-        return render_template('order_product_f5.html', x=x, f5=product, form=form)
+        return render_template('order_product_f5.html', f5=product, form=form)
     return render_template('f5.html', f5=products, form=form)
 
 @app.route('/admin_login', methods=['GET', 'POST'])
@@ -2912,7 +3482,7 @@ def orders():
         if condi == '배송중':
             cur = mysql.connection.cursor()
             cur.execute('UPDATE buy_product1 SET condi=%s WHERE id=%s', (condi,id,))
-            cur.execute('CREATE OR REPLACE VIEW all_orders AS SELECT id,ofname,username,pid,quantity,dstatus,odate,ddate,pName,price,total_price,condi,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo FROM buy_product1 INNER JOIN buy_product2 USING (ofname)')
+            cur.execute('CREATE OR REPLACE VIEW all_orders AS SELECT id,uid,username,pid,quantity,dstatus,odate,ddate,pName,price,total_price,condi,rmobile1,rmobile2,rmobile3,addnum,oplace,oplacee,oplaced,memo FROM buy_product1 INNER JOIN buy_product2 USING (uid)')
             mysql.connection.commit()
             cur.close()
         return redirect(url_for('orders'))
@@ -2948,18 +3518,9 @@ def mypage():
         uid = session['uid']
         ofname = session['s_name']
         cur = mysql.connection.cursor()
-        cur.execute('SELECT * FROM all_orders WHERE ofname=%s ORDER BY id DESC', (ofname,))
+        cur.execute('SELECT * FROM all_orders WHERE uid=%s ORDER BY id DESC', (uid,))
         result = cur.fetchall()
-        cur.execute('SELECT * FROM help WHERE name=%s ORDER BY id DESC', (ofname,))
-        help = cur.fetchall()
-        cur.close()
-        return render_template('mypage.html', result=result, help=help)
-    elif 'ofname' in session:
-        ofname = session['ofname']
-        cur = mysql.connection.cursor()
-        cur.execute('SELECT * FROM all_orders WHERE ofname=%s ORDER BY id DESC', (ofname,))
-        result = cur.fetchall()
-        cur.execute('SELECT * FROM help WHERE name=%s ORDER BY id DESC', (ofname,))
+        cur.execute('SELECT * FROM help WHERE uid=%s ORDER BY id DESC', (uid,))
         help = cur.fetchall()
         cur.close()
         return render_template('mypage.html', result=result, help=help)
